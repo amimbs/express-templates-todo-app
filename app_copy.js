@@ -138,7 +138,7 @@ app.delete('/todos/:id', (req, res) => {
     // res.json(todoListData);
 
     db.result('DELETE FROM todos WHERE id = $1', (id)).then(() => {
-        res.status(201).json({ result: "This todo is complete" })
+        res.status(201).json({ result: `${id} has been deleted` })
     }).catch(e => {
         res.json({ errors: 'There was an error updating this todo.' })
     })
