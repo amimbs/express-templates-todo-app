@@ -9,7 +9,22 @@ app.use(express.urlencoded({ extended: false }));
 //static acts on the first instance of index within the public folder
 app.use(express.static('./public'));
 
-let highestId = 4;
+// initializes and requires pg-promise package, which is a function
+const pgp = require('pg-promise')();
+
+// This creates a connection to our database
+const config = {
+    host: 'salt.db.elephantsql.com',
+    port: 5432,
+    database: 'yqutcism',
+    user: 'yqutcism',
+    password: 'B146Py8ME36XXZ2UM0_lzZwAQLJLEObz'
+};
+
+// our pgp(config) returns our databases in beekeeper
+const db = pgp(config);
+
+// let highestId = 4;
 
 // Template Engine Configuration
 
@@ -19,13 +34,14 @@ app.get('/', (req, res) => {
     res.render('home', { name: 'DevDoctor' });
 })
 
-
-// CRUD -> Create Read Update Delete.
-// Resource.
-
 // GET /todos
 app.get('/todos', (request, response) => {
-    response.json({ todos: todoListData });
+    // response.json({ todos: todoListData });
+    db.query('SELECT * FROM todos').then((todoData) => {
+        response.json({ todo: todoData })
+    }).catch((e) => {
+        response.json({ errors: e });
+    })
 })
 
 // GET /todos/:id
@@ -37,20 +53,15 @@ app.get('/todos/:id', (req, res) => {
         return;
     }
 
-    // for(let i = 0; i < todoListData.length; i++){
-    //   if (todoListData[i].id == id) {
-    //     foundTodo = todoListData[i]
-    //   }  
-    // }
-    // todoListData.forEach((todo) => {
-    //   if (todo.id == id) {
-    //     foundTodo = todo
-    //   }
-    // })
+    // let foundTodo = todoListData.find((todo) => todo.id === id);
 
-    let foundTodo = todoListData.find((todo) => todo.id === id);
+    // res.json(foundTodo)
 
-    res.json(foundTodo)
+    db.one('SELECT * FROM todos WHERE id=$1', id).then((todoData) => {
+        res.json({ todoContent: todoData })
+    }).catch((e) => {
+        res.json({ errors: 'we could not find a todo item with the provided id' });
+    })
 })
 
 // POST /todos
@@ -62,14 +73,21 @@ app.post("/todos", (req, res) => {
         return;
     }
 
-    highestId = highestId + 1;
-    let todo = {
-        id: highestId,
-        content: content
-    };
-    todoListData.push(todo);
+    //line 27 for highestID
+    // highestId = highestId + 1;
+    // let todo = {
+    //     id: highestId,
+    //     content: content
+    // };
+    // todoListData.push(todo);
 
-    res.status(201).json(todoListData);
+    // res.status(201).json(todoListData);
+
+    db.result('INSERT INTO todos(content) VALUES($1)', content).then(() => {
+        res.status(201).json({ result: "SUCCESS" })
+    }).catch(e => {
+        res.json({ errors: 'There was an error inserting the todo item.' })
+    })
 })
 
 // PUT /todos/:id
@@ -83,16 +101,23 @@ app.put('/todos/:id', (req, res) => {
     }
 
     let id = parseInt(req.params.id);
-    let foundTodo = todoListData.find((todo) => todo.id === id);
+    // let foundTodo = todoListData.find((todo) => todo.id === id);
 
-    if (!foundTodo) {
-        res.status(400).send(`Could not find todo item with provided id: ${id}`);
-        return;
-    }
+    // if (!foundTodo) {
+    //     res.status(400).send(`Could not find todo item with provided id: ${id}`);
+    //     return;
+    // }
 
-    foundTodo.completed = req.body.completed;
+    // foundTodo.completed = req.body.completed;
+    // console.log(todoListData);
+    // res.json(foundTodo);
 
-    res.json(foundTodo);
+    db.result('UPDATE todos SET is_completed = $1 WHERE id = $2', [req.body.completed, id]).then(() => {
+        res.status(201).json({ result: "This todo is complete" })
+    }).catch(e => {
+        res.json({ errors: 'There was an error updating this todo.' })
+    })
+
 })
 
 // DELETE /todos/:id
@@ -101,18 +126,24 @@ app.delete('/todos/:id', (req, res) => {
     // remove from the todo list array.
 
     let id = parseInt(req.params.id);
-    let todoIndex = todoListData.findIndex((todo) => todo.id === id);
+    // let todoIndex = todoListData.findIndex((todo) => todo.id === id);
 
-    if (todoIndex == -1) {
-        res.status(400).send(`Could not find todo item with provided id: ${id}`);
-        return;
-    }
+    // if (todoIndex == -1) {
+    //     res.status(400).send(`Could not find todo item with provided id: ${id}`);
+    //     return;
+    // }
 
-    todoListData.splice(todoIndex, 1);
+    // todoListData.splice(todoIndex, 1);
 
-    res.json(todoListData);
+    // res.json(todoListData);
+
+    db.result('DELETE FROM todos WHERE id = $1', (id)).then(() => {
+        res.status(201).json({ result: "This todo is complete" })
+    }).catch(e => {
+        res.json({ errors: 'There was an error updating this todo.' })
+    })
 })
 
-app.listen(3000, function () {
-    console.log('Todo List App is now listening on port 3000...');
+app.listen(8080, function () {
+    console.log('Todo List App is now listening on port 8080...');
 });
