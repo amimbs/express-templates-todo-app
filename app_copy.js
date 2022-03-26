@@ -113,7 +113,7 @@ app.put('/todos/:id', (req, res) => {
     // res.json(foundTodo);
 
     db.result('UPDATE todos SET is_completed = $1 WHERE id = $2', [req.body.completed, id]).then(() => {
-        res.status(201).json({ result: "This todo is complete" })
+        res.status(201).json({ result: "Success" })
     }).catch(e => {
         res.json({ errors: 'There was an error updating this todo.' })
     })
