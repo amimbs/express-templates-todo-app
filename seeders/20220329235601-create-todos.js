@@ -11,6 +11,12 @@ module.exports = {
      *   isBetaMember: false
      * }], {});
     */
+   return queryInterface.bulkInsert('SeqTodos', [{
+     content: 'Create todo App',
+     is_completed: false,
+     createdAt: new Date(),
+     updatedAt: new Date()
+   }])
   },
 
   async down (queryInterface, Sequelize) {
