@@ -1,6 +1,6 @@
 const express = require('express');
 const res = require('express/lib/response');
-const todoListData = require('./todoListData');
+// const todoListData = require('./todoListData');
 
 // App Setup
 const app = express();
@@ -24,6 +24,8 @@ const config = {
 // our pgp(config) returns our databases in beekeeper
 const db = pgp(config);
 
+const models = require('./models');
+
 // let highestId = 4;
 
 // Template Engine Configuration
@@ -32,17 +34,21 @@ app.set('view engine', 'ejs');
 
 app.get('/', (req, res) => {
     res.render('home', { name: 'DevDoctor' });
-})
+});
 
 // GET /todos
 app.get('/todos', (request, response) => {
-    // response.json({ todos: todoListData });
-    db.query('SELECT * FROM todos').then((todoData) => {
-        response.json({ todo: todoData })
-    }).catch((e) => {
-        response.json({ errors: e });
+    // // response.json({ todos: todoListData });
+    // db.query('SELECT * FROM todos').then((todoData) => {
+    //     response.json({ todo: todoData })
+    // }).catch((e) => {
+    //     response.json({ errors: e });
+    // })
+
+    models.SeqTodo.findAll().then((results) => {
+        response.json({ todos: results })
     })
-})
+});
 
 // GET /todos/:id
 app.get('/todos/:id', (req, res) => {
@@ -57,12 +63,20 @@ app.get('/todos/:id', (req, res) => {
 
     // res.json(foundTodo)
 
-    db.one('SELECT * FROM todos WHERE id=$1', id).then((todoData) => {
-        res.json({ todoContent: todoData })
-    }).catch((e) => {
-        res.json({ errors: 'we could not find a todo item with the provided id' });
+    // db.one('SELECT * FROM todos WHERE id=$1', id).then((todoData) => {
+    //     res.json({ todoContent: todoData })
+    // }).catch((e) => {
+    //     res.json({ errors: 'we could not find a todo item with the provided id' });
+    // })
+
+    models.SeqTodo.findByPk(id).then((todo) => {
+        if (!todo) {
+            res.json({ errors: 'could not find todo with givien id' })
+        } else {
+            res.json(todo)
+        }
     })
-})
+});
 
 // POST /todos
 app.post("/todos", (req, res) => {
@@ -83,12 +97,16 @@ app.post("/todos", (req, res) => {
 
     // res.status(201).json(todoListData);
 
-    db.result('INSERT INTO todos(content) VALUES($1)', content).then(() => {
-        res.status(201).json({ result: "SUCCESS" })
-    }).catch(e => {
-        res.json({ errors: 'There was an error inserting the todo item.' })
+    // db.result('INSERT INTO todos(content) VALUES($1)', content).then(() => {
+    //     res.status(201).json({ result: "SUCCESS" })
+    // }).catch(e => {
+    //     res.json({ errors: 'There was an error inserting the todo item.' })
+    // })
+
+    models.SeqTodo.create({ content: content, is_completed: false }).then((todo) => {
+        res.json(todo)
     })
-})
+});
 
 // PUT /todos/:id
 app.put('/todos/:id', (req, res) => {
@@ -112,12 +130,23 @@ app.put('/todos/:id', (req, res) => {
     // console.log(todoListData);
     // res.json(foundTodo);
 
-    db.result('UPDATE todos SET is_completed = $1 WHERE id = $2', [req.body.completed, id]).then(() => {
-        res.status(201).json({ result: "Success" })
-    }).catch(e => {
-        res.json({ errors: 'There was an error updating this todo.' })
-    })
+    // db.result('UPDATE todos SET is_completed = $1 WHERE id = $2', [req.body.completed, id]).then(() => {
+    //     res.status(201).json({ result: "Success" })
+    // }).catch(e => {
+    //     res.json({ errors: 'There was an error updating this todo.' })
+    // })
 
+    models.SeqTodo.findByPk(id).then((todo) => {
+        if (!todo) {
+            res.json({ errors: 'could not find todo with givien id' })
+        } else {
+            todo.update({
+                is_completed: req.body.completed,
+                content: req.body.body
+            })
+            res.json(todo)
+        }
+    })
 })
 
 // DELETE /todos/:id
@@ -137,10 +166,17 @@ app.delete('/todos/:id', (req, res) => {
 
     // res.json(todoListData);
 
-    db.result('DELETE FROM todos WHERE id = $1', (id)).then(() => {
-        res.status(201).json({ result: `${id} has been deleted` })
-    }).catch(e => {
-        res.json({ errors: 'There was an error updating this todo.' })
+    // db.result('DELETE FROM todos WHERE id = $1', (id)).then(() => {
+    //     res.status(201).json({ result: `${id} has been deleted` })
+    // }).catch(e => {
+    //     res.json({ errors: 'There was an error updating this todo.' })
+    // })
+
+    models.SeqTodo.findByPk(id).then((todo) => {
+        if (todo) {
+            todo.destroy();
+        }
+        res.status(201).json({ result: "Success" });
     })
 })
 
